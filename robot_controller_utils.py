@@ -156,6 +156,24 @@ class BuzzerController(Node):
         """Stop the buzzer immediately."""
         self.play_buzzer(freq=0, on_time=0, off_time=0, repeat=1)
         self.get_logger().info("Stopped the buzzer.")
+      
+### Battery Monitor ###
+class BatteryMonitor(Node):
+    """Simplified battery monitor to check battery voltage."""
+    def __init__(self):
+        super().__init__('battery_monitor')
+        self.subscription = self.create_subscription(UInt16, '/ros_robot_controller/battery', self.battery_voltage_callback, 10)
+        self.latest_voltage = None
+        self.get_logger().info("Battery Monitor initialized and listening for voltage data.")
+
+    def battery_voltage_callback(self, msg):
+        """Callback to process battery voltage."""
+        self.latest_voltage = msg.data
+        self.get_logger().info(f"Battery Voltage: {msg.data} mV")
+
+    def get_latest_voltage(self):
+        """Return the latest received battery voltage."""
+        return self.latest_voltage
 
 
 def main():
