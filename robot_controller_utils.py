@@ -13,21 +13,23 @@ Description:
 - Includes:
   1. Motor control commands (forward, backward, left, right, stop)
   2. IMU data extraction commands (orientation, angular velocity, etc.)
+  3. RGB LED control commands (set color, turn off)
 
 Usage:
 - Import this file in your main script:
-    from robot_controller_utils import MotorController, IMUDataProcessor
-- Use the simplified commands to control motors and process IMU data.
+    from robot_controller_utils import MotorController, IMUDataProcessor, RGBLEDController
+- Use the simplified commands to control motors, RGB LEDs, and process IMU data.
 
 **********************************************************
 """
 
 import rclpy
 from rclpy.node import Node
+from ros_robot_controller_msgs.msg import MotorsState, MotorState, RGBState, RGBStates
 from sensor_msgs.msg import Imu
-from ros_robot_controller_msgs.msg import MotorsState, MotorState
 
 
+### Motor Controller ###
 class MotorController(Node):
     """
     Simplified motor controller class with easy-to-use commands
@@ -38,7 +40,6 @@ class MotorController(Node):
 
         # Publisher for motor control
         self.motor_pub = self.create_publisher(MotorsState, '/ros_robot_controller/set_motor', 10)
-
         self.get_logger().info("Motor Controller initialized and ready for commands.")
 
     def publish_motor_command(self, motor_states):
@@ -89,6 +90,7 @@ class MotorController(Node):
         self.get_logger().info(f"Moving right at {speed} RPS.")
 
 
+### IMU Data Processor ###
 class IMUDataProcessor(Node):
     """
     Simplified IMU data processor class that extracts IMU values
@@ -134,6 +136,51 @@ class IMUDataProcessor(Node):
         self.get_logger().info(f'Angular Velocity: x={angular_velocity.x:.2f}, y={angular_velocity.y:.2f}, z={angular_velocity.z:.2f}')
         self.get_logger().info(f'Linear Acceleration: x={linear_acceleration.x:.2f}, y={linear_acceleration.y:.2f}, z={linear_acceleration.z:.2f}')
 
+
+### RGB LED Controller ###
+class RGBLEDController(Node):
+    """
+    Simplified RGB LED controller to set LED colors and turn them off.
+    """
+    def __init__(self):
+        super().__init__('rgb_led_controller')
+
+        # Publisher for RGB LED control
+        self.rgb_pub = self.create_publisher(RGBStates, '/ros_robot_controller/set_rgb', 10)
+        self.get_logger().info("RGB LED Controller initialized and ready for commands.")
+
+    def set_color(self, index, red, green, blue):
+        """
+        Set a specific LED to a given RGB color.
+        :param index: LED index (1, 2, etc.)
+        :param red: Red component (0-255)
+        :param green: Green component (0-255)
+        :param blue: Blue component (0-255)
+        """
+        msg = RGBStates()
+        msg.states = [RGBState(index=index, red=red, green=green, blue=blue)]
+        self.rgb_pub.publish(msg)
+        self.get_logger().info(f"Set LED {index} to color R={red}, G={green}, B={blue}")
+
+    def set_all_colors(self, red, green, blue):
+        """
+        Set all LEDs to the same RGB color.
+        :param red: Red component (0-255)
+        :param green: Green component (0-255)
+        :param blue: Blue component (0-255)
+        """
+        msg = RGBStates()
+        msg.states = [
+            RGBState(index=1, red=red, green=green, blue=blue),
+            RGBState(index=2, red=red, green=green, blue=blue)
+        ]
+        self.rgb_pub.publish(msg)
+        self.get_logger().info(f"Set all LEDs to color R={red}, G={green}, B={blue}")
+
+    def turn_off_all(self):
+        """Turn off all LEDs."""
+        self.set_all_colors(0, 0, 0)
+        self.get_logger().info("Turned off all LEDs.")
 
 def main():
     """
