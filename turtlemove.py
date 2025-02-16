@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 import time
+from turtle_commands import run_commands  # Import the function from turtle_commands.py
 
 class TurtleController(Node):
     def __init__(self):
@@ -33,10 +34,7 @@ def main(args=None):
     node = TurtleController()
 
     try:
-        # Send a series of movement commands
-        node.move_turtle(linear=2.0, angular=0.0, duration=2.0)  # Move forward
-        node.move_turtle(linear=0.0, angular=1.5, duration=2.0)  # Rotate in place
-        node.move_turtle(linear=1.0, angular=1.0, duration=3.0)  # Move in a curve
+        run_commands(node)  # Call function from turtle_commands.py
     except KeyboardInterrupt:
         node.get_logger().info('Shutting down.')
 
