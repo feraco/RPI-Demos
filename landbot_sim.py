@@ -58,7 +58,7 @@ class LandBotSimulator():
         new_x = self.position[0] + vx * duration
         new_y = self.position[1] + vy * duration
         self.position = (new_x, new_y)
-        self.path_coors.append(self.position)
+        self.path_coors.append((new_x, new_y))
         self.plot_flight_path()
 
     def move_forward(self, speed, duration):
@@ -87,7 +87,7 @@ class LandBotSimulator():
     def plot_flight_path(self):
         fig, ax = plt.subplots()
         df = pd.DataFrame(self.path_coors, columns=['X', 'Y'])
-        ax.plot(df['X'], df['Y'], 'bo-', linewidth=2, markersize=8)
+        ax.plot(df['X'].to_numpy(), df['Y'].to_numpy(), 'bo-', linewidth=2, markersize=8)
         ax.scatter(df.iloc[-1]['X'], df.iloc[-1]['Y'], c='red', marker='^', s=100, label='LandBot')
         ax.grid()
         ax.set(xlabel='X Position', ylabel='Y Position', title='LandBot Movement Path')
