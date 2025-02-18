@@ -20,7 +20,14 @@ class LandBotSimulator():
             print("LandBot Real Mode Enabled: Sending commands to ROS2")
         else:
             print("LandBot Simulator Initialized")
-    
+    @staticmethod
+    def serialize_command(command: dict):
+        """Converts a command dictionary to a string format."""
+        serialized = command['command']
+        if command.get('arguments'):
+            serialized = f"{serialized} {' '.join(map(str, command['arguments']))}"
+        return serialized
+
     def _init_state(self):
         self.position = (0, 0)  # X, Y coordinates
         self.bearing = 0  # Yaw in degrees
