@@ -77,6 +77,19 @@ class LandBotSimulator():
         self.send_command('move_right', speed)
         self.move(speed, 0, duration)
     
+    def move_in_direction(self, degrees, speed, duration):
+        radians = np.radians(degrees)
+        vx = speed * np.cos(radians)
+        vy = speed * np.sin(radians)
+        self.send_command('move_in_direction', degrees, speed, duration)
+        self.move(vx, vy, duration)
+    
+    def rotate_right(self, degrees):
+        self.rotate(degrees)
+    
+    def rotate_left(self, degrees):
+        self.rotate(-degrees)
+    
     def rotate(self, degrees):
         self.bearing = (self.bearing + degrees) % 360
         self.yaw_data.append(self.bearing)
@@ -115,8 +128,8 @@ class LandBotSimulator():
 if __name__ == '__main__':
     landbot = LandBotSimulator(real=True)
     landbot.move_forward(1.0, 2.0)
-    landbot.rotate(90)
+    landbot.rotate_right(90)
     landbot.move_forward(1.0, 2.0)
     landbot.move_left(0.5, 1.5)
-    landbot.rotate(-45)
+    landbot.rotate_left(45)
     landbot.move_backward(1.0, 2.0)
