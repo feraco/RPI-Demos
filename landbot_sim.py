@@ -21,9 +21,17 @@ class LandBotSimulator():
         else:
             print("LandBot Simulator Initialized")
     
+    @staticmethod
+    def serialize_command(command: dict):
+        """Converts a command dictionary to a string format."""
+        serialized = command['command']
+        if command.get('arguments'):
+            serialized = f"{serialized} {' '.join(map(str, command['arguments']))}"
+        return serialized
+
     def _init_state(self):
-        self.position = (0, 0)  # X, Y coordinates
-        self.bearing = 0  # Yaw in degrees
+        self.position = (0, 0)
+        self.bearing = 0
         self.path_coors = [(0, 0)]
         self.yaw_data = [0]
         self.command_log = []
@@ -31,30 +39,28 @@ class LandBotSimulator():
     def send_command(self, command: str, *args):
         command_json = {'command': command, 'arguments': args}
         self.command_log.append(command_json)
-        print(f'Executing command: {self.serialize_command(command_json)}')
+        print(f'Executing command: {LandBotSimulator.serialize_command(command_json)}')
         if self.real_mode:
             self.publish_motor_command(command, *args)
         time.sleep(1)
 
     def publish_motor_command(self, command, *args):
-        motor_states = []
-        speed = args[0] if args else 0.5  # Default speed if not provided
-        if command == 'move_forward':
-            motor_states = [MotorState(id=i, rps=speed) for i in range(1, 5)]
-        elif command == 'move_backward':
-            motor_states = [MotorState(id=i, rps=-speed) for i in range(1, 5)]
-        elif command == 'move_left':
-            motor_states = [MotorState(id=1, rps=-speed), MotorState(id=2, rps=speed), MotorState(id=3, rps=speed), MotorState(id=4, rps=-speed)]
-        elif command == 'move_right':
-            motor_states = [MotorState(id=1, rps=speed), MotorState(id=2, rps=-speed), MotorState(id=3, rps=-speed), MotorState(id=4, rps=speed)]
-        elif command == 'rotate':
-            angular_speed = args[0] if args else 0.5
-            motor_states = [MotorState(id=1, rps=-angular_speed), MotorState(id=2, rps=-angular_speed), MotorState(id=3, rps=angular_speed), MotorState(id=4, rps=angular_speed)]
-        if motor_states:
+        speed = args[0] if args else 0.5
+        motor_states = [MotorState(id=i, rps=speed if 'forward' in command else -speed) for i in range(1, 5)]
+        if 'rotate' in command:
+            motor_states = [MotorState(id=1, rps=-speed), MotorState(id=2, rps=-speed), MotorState(id=3, rps=speed), MotorState(id=4, rps=speed)]
+        if self.real_mode:
             msg = MotorsState(data=motor_states)
             self.motor_pub.publish(msg)
             print(f"Published motor command: {command}")
-    
+
+    def move(self, vx, vy, duration):
+        new_x = self.position[0] + vx * duration
+        new_y = self.position[1] + vy * duration
+        self.position = (new_x, new_y)
+        self.path_coors.append((new_x, new_y))
+        self.plot_flight_path()
+
     def move_forward(self, speed, duration):
         self.send_command('move_forward', speed)
         self.move(speed * np.cos(np.radians(self.bearing)), speed * np.sin(np.radians(self.bearing)), duration)
@@ -71,12 +77,19 @@ class LandBotSimulator():
         self.send_command('move_right', speed)
         self.move(speed, 0, duration)
     
-    def rotate_left(self, degrees):
-        self.rotate(-degrees)
+    def move_in_direction(self, degrees, speed, duration):
+        radians = np.radians(degrees)
+        vx = speed * np.cos(radians)
+        vy = speed * np.sin(radians)
+        self.send_command('move_in_direction', degrees, speed, duration)
+        self.move(vx, vy, duration)
     
     def rotate_right(self, degrees):
         self.rotate(degrees)
-
+    
+    def rotate_left(self, degrees):
+        self.rotate(-degrees)
+    
     def rotate(self, degrees):
         self.bearing = (self.bearing + degrees) % 360
         self.yaw_data.append(self.bearing)
@@ -87,7 +100,7 @@ class LandBotSimulator():
     def plot_flight_path(self):
         fig, ax = plt.subplots()
         df = pd.DataFrame(self.path_coors, columns=['X', 'Y'])
-        ax.plot(df['X'], df['Y'], 'bo-', linewidth=2, markersize=8)
+        ax.plot(df['X'].to_numpy(), df['Y'].to_numpy(), 'bo-', linewidth=2, markersize=8)
         ax.scatter(df.iloc[-1]['X'], df.iloc[-1]['Y'], c='red', marker='^', s=100, label='LandBot')
         ax.grid()
         ax.set(xlabel='X Position', ylabel='Y Position', title='LandBot Movement Path')
@@ -112,24 +125,8 @@ class LandBotSimulator():
         plt.grid()
         plt.show()
 
-    def reset(self):
-        print("Resetting LandBot simulation...")
-        self._init_state()
-
-    def save(self, file_path='landbot_commands.json'):
-        with open(file_path, 'w') as json_file:
-            json.dump(self.command_log, json_file, indent=4)
-        print(f"Commands saved to {file_path}")
-
-    def load_commands(self, file_path):
-        with open(file_path) as json_file:
-            commands = json.load(json_file)
-        self._init_state()
-        for command in commands:
-            getattr(self, command['command'])(*command['arguments'])
-
 if __name__ == '__main__':
-    landbot = LandBotSimulator(real=True)  # Change to False for simulation
+    landbot = LandBotSimulator(real=True)
     landbot.move_forward(1.0, 2.0)
     landbot.rotate_right(90)
     landbot.move_forward(1.0, 2.0)
