@@ -1,5 +1,3 @@
 numpy
 pandas
 matplotlib
-rclpy
-ros_robot_controller_msgs
