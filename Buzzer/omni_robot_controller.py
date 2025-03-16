@@ -176,7 +176,11 @@ class OmniWheelControlNode(Node):
             time.sleep(delay)
             self.set_color(index, 0, 0, 0)  # Turn LED off
             time.sleep(delay)
+
+        time.sleep(0.1)  # Allow time for the last 'off' signal to process
+        self.set_color(index, 0, 0, 0)  # Turn LED off again to ensure it's off
         self.get_logger().info(f'Blinked LED {index} {times} times.')
+        
     def print_lidar_distances(self):
         """
         Prints the current LiDAR distances for front, back, left, and right.
