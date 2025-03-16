@@ -28,6 +28,8 @@ from mecanum import MecanumChassis  # Import the MecanumChassis class
 class OmniWheelControlNode(Node):
     def __init__(self):
         super().__init__('omni_wheel_control_node')  # Initialize the node
+        self.robot_moving = False  # Track movement state
+
         self.min_distance = float('inf')
         self.avg_distance = float('inf')
         # Initialize MecanumChassis with default parameters
@@ -225,12 +227,15 @@ class OmniWheelControlNode(Node):
         """
         msg = MotorsState(data=motor_states)
         self.motor_pub.publish(msg)
+        self.robot_moving = any(motor.rps != 0 for motor in motor_states)
+
 
     def stop_all_motors(self):
         """Stops all motors by setting their speed to 0."""
         motor_states = [MotorState(id=i, rps=0.0) for i in range(1, 5)]
         self.publish_motor_command(motor_states)
         self.get_logger().info('Stopped all motors.')
+        self.robot_moving = False  # Ensure movement flag is updated
 
     def move_with_duration(self, motor_states, duration):
         """
