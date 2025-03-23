@@ -14,12 +14,14 @@ class LandBotSimulator():
         self.real_mode = real
         self._init_state()
         if self.real_mode:
+            import rclpy
+            from rclpy.node import Node
+            from ros_robot_controller_msgs.msg import MotorsState, MotorState
+
             rclpy.init()
             self.node = Node('landbot_controller')
             self.motor_pub = self.node.create_publisher(MotorsState, '/ros_robot_controller/set_motor', 10)
             print("LandBot Real Mode Enabled: Sending commands to ROS2")
-        else:
-            print("LandBot Simulator Initialized")
     
     @staticmethod
     def serialize_command(command: dict):
