@@ -49,8 +49,6 @@ class QRCodeDetector(Node):
         """ Returns the last detected QR code data. """
         return self.detected_data
 
-import matplotlib.pyplot as plt
-
 def generate_qr_code(data, output_file="my_qrcode.jpg"):
     """ Generates a QR code and saves it as an image. """
     qr = qrcode.QRCode(
@@ -63,17 +61,14 @@ def generate_qr_code(data, output_file="my_qrcode.jpg"):
     qr.make(fit=True)
 
     img = qr.make_image(fill_color="black", back_color="white")
-    img = np.array(img, dtype=np.uint8)  # Convert to uint8 format for OpenCV
+    img = np.array(img)
 
-    # Display QR code using Matplotlib (works in Jupyter Notebook)
-    plt.imshow(img, cmap='gray')
-    plt.axis('off')  # Hide axes
-    plt.title("Generated QR Code")
-    plt.show()
+    cv2.imshow("Generated QR Code", img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-    # Save QR code
     cv2.imwrite(output_file, img)
-    print(f"✅ QR Code saved as {output_file}")
+    print(f"QR Code saved as {output_file}")
 
 if __name__ == "__main__":
     option = input("Enter '1' to generate QR code, '2' to detect: ")
