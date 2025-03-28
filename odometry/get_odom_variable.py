@@ -1,14 +1,16 @@
+
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
-from threading import Thread, Event
+from threading import Event
 
 # Global to store the result
 _odom_result = None
 
-def get_odom_variable(field_path='pose.pose.position.x', topic='/odom'):
+def get_odom_variable(field_path='pose.pose.position.x', topic='/odom', rclpy_context=None):
     """
-    Fetch one odometry value from a specified field path like 'pose.pose.position.x'
+    Fetch one odometry value from a specified field path like 'pose.pose.position.x'.
+    Reuses existing rclpy context; assumes rclpy.init() was already called.
     """
     global _odom_result
 
@@ -31,19 +33,10 @@ def get_odom_variable(field_path='pose.pose.position.x', topic='/odom'):
             global _odom_result
             _odom_result = value
             self.received.set()
-            rclpy.shutdown()
 
-    def spin_node():
-        rclpy.init()
-        node = OneShotOdom()
-        rclpy.spin(node)
-
-    # Run ROS spin in background
-    thread = Thread(target=spin_node)
-    thread.start()
-
-    # Wait for message
-    while rclpy.ok() and _odom_result is None:
-        pass
-
+    # Create node and spin until one message is received
+    node = OneShotOdom()
+    while not node.received.is_set():
+        rclpy.spin_once(node, timeout_sec=0.1)
+    node.destroy_node()
     return _odom_result
