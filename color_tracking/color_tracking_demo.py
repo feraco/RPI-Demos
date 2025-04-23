@@ -3,8 +3,7 @@
 """
 Color Tracking Demo
 
-This script demonstrates how to use the color tracking module
-to detect and track colored objects using a camera.
+Simple demo of color tracking functionality.
 """
 
 import time
@@ -35,8 +34,8 @@ def main():
         
         # Main loop
         while True:
-            # Get the processed frame
-            frame = tracker.get_processed_frame()
+            # Process a frame
+            frame = tracker.process_frame()
             
             if frame is not None:
                 # Display the frame
