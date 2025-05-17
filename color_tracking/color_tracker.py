@@ -112,3 +112,57 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+
+# === Additional Notebook-Compatible Helper Functions ===
+
+def detect_color(frame, color_name='red'):
+    color_ranges = {
+        'red': ([0, 100, 100], [10, 255, 255], [160, 100, 100], [180, 255, 255]),
+        'green': ([35, 100, 100], [85, 255, 255], None, None),
+        'blue': ([100, 100, 100], [140, 255, 255], None, None),
+        'yellow': ([20, 100, 100], [35, 255, 255], None, None)
+    }
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lower1, upper1, lower2, upper2 = color_ranges[color_name]
+
+    mask1 = cv2.inRange(hsv, np.array(lower1), np.array(upper1))
+    if lower2 and upper2:
+        mask2 = cv2.inRange(hsv, np.array(lower2), np.array(upper2))
+        mask = cv2.bitwise_or(mask1, mask2)
+    else:
+        mask = mask1
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return mask, contours
+
+
+def run_color_tracking(color='red', duration=5):
+    rclpy.init()
+    node = ColorTracker(color_name=color)
+
+    start = time.time()
+    while time.time() - start < duration:
+        rclpy.spin_once(node, timeout_sec=0.1)
+        if not node.image_queue.empty():
+            frame = node.image_queue.get()
+            mask, contours = detect_color(frame, color)
+            for contour in contours:
+                if cv2.contourArea(contour) > 500:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            plt.figure(figsize=(10, 8))
+            plt.imshow(rgb_frame)
+            plt.title(f'Detecting {color}')
+            plt.axis('off')
+            clear_output(wait=True)
+            display(plt.gcf())
+            plt.close()
+
+    node.destroy_node()
+    rclpy.shutdown()
