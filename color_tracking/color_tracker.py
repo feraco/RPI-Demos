@@ -1,4 +1,3 @@
-
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -120,3 +119,35 @@ def run_color_tracking(color='red', duration=5):
 
     node.destroy_node()
     rclpy.shutdown()
+
+# Notebook-friendly wrapper
+def is_color_detected(color='red', duration=5, min_area=500):
+    """
+    Runs the color tracker for a specific color and checks if the color is detected.
+    Parameters:
+        color (str): Color name to track (e.g., 'red', 'blue')
+        duration (int): How many seconds to run the detection loop
+        min_area (int): Minimum contour area to be considered a valid detection
+    Returns:
+        bool: True if color was detected, False otherwise
+    """
+    if not rclpy.ok():
+        rclpy.init()
+
+    node = ColorTracker(color_name=color)
+    start = time.time()
+    detected = False
+
+    while time.time() - start < duration:
+        rclpy.spin_once(node, timeout_sec=0.1)
+        if not node.image_queue.empty():
+            frame = node.image_queue.get()
+            node.process_frame(frame)
+            if node.is_color_detected(min_area):
+                print(f"{color.upper()} detected!")
+                print(node.get_detected_objects_info())
+                detected = True
+
+    node.destroy_node()
+    rclpy.shutdown()
+    return detected
