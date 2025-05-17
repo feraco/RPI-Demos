@@ -82,3 +82,41 @@ class ColorTracker(Node):
                 f"Object {i+1}: x={obj['x']:.1f}, y={obj['y']:.1f}, radius={obj['radius']:.1f}, area={obj['area']:.1f}"
             )
         return "\n".join(info)
+
+
+
+import matplotlib.pyplot as plt
+from IPython.display import display, clear_output
+
+def run_color_tracking(color='red', duration=5):
+    if not rclpy.ok():
+        rclpy.init()
+
+    node = ColorTracker(color_name=color)
+    start = time.time()
+
+    while time.time() - start < duration:
+        rclpy.spin_once(node, timeout_sec=0.1)
+
+        if not node.image_queue.empty():
+            frame = node.image_queue.get()
+            node.process_frame(frame)
+
+            if node.is_color_detected():
+                print(f"✅ {color.upper()} detected!")
+                print(node.get_detected_objects_info())
+
+            # Display inline
+            rgb = cv2.cvtColor(node.processed_frame, cv2.COLOR_BGR2RGB)
+            plt.figure(figsize=(8, 6))
+            plt.imshow(rgb)
+            plt.title(f"Tracking: {color}")
+            plt.axis('off')
+            clear_output(wait=True)
+            display(plt.gcf())
+            plt.close()
+
+        time.sleep(0.1)
+
+    node.destroy_node()
+    rclpy.shutdown()
